@@ -2,7 +2,7 @@
 Fuzzy string search in Haskell.
 Uses 'TextualMonoid' to be able to run on different types of strings.
 -}
-module Text.Huzzy where
+module Text.Fuzzily where
 
 import Protolude as P (
   Bool (True),

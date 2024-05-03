@@ -1,16 +1,15 @@
-name: huzzy
+name: fuzzily
 version: 0.1.0.0
 synopsis: Filters a list based on a fuzzy string search
-homepage: https://github.com/ad-si/TaskLite/tree/master/huzzy
-license: AGPL-3.0-or-later
+description: |
+  Fuzzily is a library that filters a list based on a fuzzy string search.
+  Uses 'TextualMonoid' to be able to run on different types of strings.
+homepage: https://github.com/ad-si/Fuzzily
+license: ISC
 author: Adrian Sieber
 maintainer: mail@adriansieber.com
 copyright: Adrian Sieber
-category: Text, Fuzzy
-
-description: |
-  Please check out the readme on GitHub
-  at https://github.com/ad-si/TaskLite/tree/master/huzzy#readme
+category: Text, Fuzzy, Search, Find, Filter
 
 extra-source-files:
   - README.md
@@ -36,10 +35,10 @@ library:
   source-dirs: src
 
 tests:
-  huzzy-test:
+  fuzzily-test:
     main: tests.hs
     source-dirs: tests
     dependencies:
       - base
       - HUnit
-      - huzzy
+      - fuzzily

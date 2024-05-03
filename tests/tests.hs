@@ -14,7 +14,7 @@ import Protolude (
  )
 
 import Test.HUnit (Assertion, Test (..), runTestTT, (@?=))
-import Text.Huzzy as Hu (
+import Text.Fuzzily as Fu (
   CaseSensitivity (HandleCase, IgnoreCase),
   Fuzzy (original, rendered, score),
   filter,
@@ -34,15 +34,15 @@ tests =
         TestList
           [ TestLabel "should return true when fuzzy match" $
               from
-                [ Hu.test "back" "imaback" @?= True
-                , Hu.test "back" "bakck" @?= True
-                , Hu.test "shig" "osh kosh modkhigow" @?= True
-                , Hu.test "" "osh kosh modkhigow" @?= True
+                [ Fu.test "back" "imaback" @?= True
+                , Fu.test "back" "bakck" @?= True
+                , Fu.test "shig" "osh kosh modkhigow" @?= True
+                , Fu.test "" "osh kosh modkhigow" @?= True
                 ]
           , TestLabel "should return false when no fuzzy match" $
               from
-                [ Hu.test "back" "abck" @?= False
-                , Hu.test "okmgk" "osh kosh modkhigow" @?= False
+                [ Fu.test "back" "abck" @?= False
+                , Fu.test "okmgk" "osh kosh modkhigow" @?= False
                 ]
           ]
     , TestLabel "match" $
@@ -51,15 +51,15 @@ tests =
               "should return a greater score for consecutive matches of pattern"
               $ from
                 [ (>)
-                    (Hu.score <$> Hu.match IgnoreCase ("", "") identity "abcd" "zabcd")
-                    (Hu.score <$> Hu.match IgnoreCase ("", "") identity "abcd" "azbcd")
+                    (Fu.score <$> Fu.match IgnoreCase ("", "") identity "abcd" "zabcd")
+                    (Fu.score <$> Fu.match IgnoreCase ("", "") identity "abcd" "azbcd")
                     @?= True
                 ]
           , TestLabel
               "should return the string as is if no pre/post and case sensitive"
               $ from
-                [ Hu.rendered
-                    <$> Hu.match
+                [ Fu.rendered
+                    <$> Fu.match
                       HandleCase
                       ("", "")
                       identity
@@ -69,7 +69,7 @@ tests =
                 ]
           , TestLabel "should return Nothing on no match" $
               from
-                [ Hu.match
+                [ Fu.match
                     IgnoreCase
                     ("", "")
                     identity
@@ -79,7 +79,7 @@ tests =
                 ]
           , TestLabel "should be case sensitive is specified" $
               from
-                [ Hu.match
+                [ Fu.match
                     HandleCase
                     ("", "")
                     identity
@@ -89,8 +89,8 @@ tests =
                 ]
           , TestLabel "should be wrap pre and post around matches" $
               from
-                [ Hu.rendered
-                    <$> Hu.match
+                [ Fu.rendered
+                    <$> Fu.match
                       HandleCase
                       ("<", ">")
                       identity
@@ -104,15 +104,15 @@ tests =
           [ TestLabel "should return list untouched when given empty pattern" $
               from
                 [ map
-                    Hu.original
-                    (Hu.filter HandleCase ("", "") identity "" ["abc", "def"])
+                    Fu.original
+                    (Fu.filter HandleCase ("", "") identity "" ["abc", "def"])
                     @?= ["abc", "def"]
                 ]
           , TestLabel "should return the highest score first" $
               from
                 [ (@?=)
-                    (head (Hu.filter HandleCase ("", "") identity "cb" ["cab", "acb"]))
-                    (head (Hu.filter HandleCase ("", "") identity "cb" ["acb"]))
+                    (head (Fu.filter HandleCase ("", "") identity "cb" ["cab", "acb"]))
+                    (head (Fu.filter HandleCase ("", "") identity "cb" ["acb"]))
                 ]
           ]
     ]

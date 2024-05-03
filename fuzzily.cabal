@@ -1,31 +1,29 @@
-cabal-version: 2.2
+cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.1.
+-- This file has been generated from package.yaml by hpack version 0.36.0.
 --
 -- see: https://github.com/sol/hpack
 
-name:           huzzy
+name:           fuzzily
 version:        0.1.0.0
 synopsis:       Filters a list based on a fuzzy string search
-description:    Please check out the readme on GitHub
-                at https://github.com/ad-si/TaskLite/tree/master/huzzy#readme
-category:       Text, Fuzzy
-homepage:       https://github.com/ad-si/TaskLite/tree/master/huzzy
+description:    Fuzzily is a library that filters a list based on a fuzzy string search.
+                Uses 'TextualMonoid' to be able to run on different types of strings.
+category:       Text, Fuzzy, Search, Find, Filter
+homepage:       https://github.com/ad-si/Fuzzily
 author:         Adrian Sieber
 maintainer:     mail@adriansieber.com
 copyright:      Adrian Sieber
-license:        AGPL-3.0-or-later
+license:        ISC
 build-type:     Simple
 extra-source-files:
     README.md
 
 library
   exposed-modules:
-      Text.Huzzy
+      Text.Fuzzily
   other-modules:
-      Paths_huzzy
-  autogen-modules:
-      Paths_huzzy
+      Paths_fuzzily
   hs-source-dirs:
       src
   default-extensions:
@@ -38,13 +36,11 @@ library
     , protolude
   default-language: Haskell2010
 
-test-suite huzzy-test
+test-suite fuzzily-test
   type: exitcode-stdio-1.0
   main-is: tests.hs
   other-modules:
-      Paths_huzzy
-  autogen-modules:
-      Paths_huzzy
+      Paths_fuzzily
   hs-source-dirs:
       tests
   default-extensions:
@@ -54,7 +50,7 @@ test-suite huzzy-test
   build-depends:
       HUnit
     , base
-    , huzzy
+    , fuzzily
     , monoid-subclasses
     , protolude
   default-language: Haskell2010
