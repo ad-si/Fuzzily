@@ -2,10 +2,13 @@ module Main where
 
 import Protolude (
   Bool (False, True),
+  Char,
   IO,
+  Int,
   Maybe (Just, Nothing),
   Monad (return),
   Ord ((>)),
+  fst,
   head,
   identity,
   map,
@@ -16,9 +19,10 @@ import Protolude (
 import Test.HUnit (Assertion, Test (..), runTestTT, (@?=))
 import Text.Fuzzily as Fu (
   CaseSensitivity (HandleCase, IgnoreCase),
-  Fuzzy (original, rendered, score),
+  Fuzzy (Fuzzy, original, rendered, score),
   filter,
   match,
+  simpleFilter,
   test,
  )
 
@@ -32,7 +36,7 @@ tests =
   TestList
     [ TestLabel "test" $
         TestList
-          [ TestLabel "should return true when fuzzy match" $
+          [ TestLabel "returns true when fuzzy match" $
               from
                 [ Fu.test "back" "imaback" @?= True
                 , Fu.test "back" "bakck" @?= True
@@ -48,7 +52,7 @@ tests =
     , TestLabel "match" $
         TestList
           [ TestLabel
-              "should return a greater score for consecutive matches of pattern"
+              "returns a greater score for consecutive matches of pattern"
               $ from
                 [ (>)
                     (Fu.score <$> Fu.match IgnoreCase ("", "") identity "abcd" "zabcd")
@@ -56,7 +60,7 @@ tests =
                     @?= True
                 ]
           , TestLabel
-              "should return the string as is if no pre/post and case sensitive"
+              "returns the string as is if no pre/post and case sensitive"
               $ from
                 [ Fu.rendered
                     <$> Fu.match
@@ -67,7 +71,7 @@ tests =
                       "ZaZbZ"
                       @?= Just "ZaZbZ"
                 ]
-          , TestLabel "should return Nothing on no match" $
+          , TestLabel "returns Nothing on no match" $
               from
                 [ Fu.match
                     IgnoreCase
@@ -77,7 +81,7 @@ tests =
                     "ZaZbZ"
                     @?= Nothing
                 ]
-          , TestLabel "should be case sensitive is specified" $
+          , TestLabel "is case sensitive if specified" $
               from
                 [ Fu.match
                     HandleCase
@@ -87,7 +91,7 @@ tests =
                     "Haskell"
                     @?= Nothing
                 ]
-          , TestLabel "should be wrap pre and post around matches" $
+          , TestLabel "wraps pre and post around matches" $
               from
                 [ Fu.rendered
                     <$> Fu.match
@@ -101,19 +105,91 @@ tests =
           ]
     , TestLabel "filter" $
         TestList
-          [ TestLabel "should return list untouched when given empty pattern" $
+          [ TestLabel "returns list untouched when given empty pattern" $
               from
-                [ map
-                    Fu.original
-                    (Fu.filter HandleCase ("", "") identity "" ["abc", "def"])
+                [ ( Fu.original
+                      `map` ( Fu.filter
+                                HandleCase
+                                ("", "")
+                                identity
+                                ""
+                                ["abc", "def"]
+                            )
+                  )
                     @?= ["abc", "def"]
                 ]
-          , TestLabel "should return the highest score first" $
+          , TestLabel "returns the highest score first" $
               from
                 [ (@?=)
                     (head (Fu.filter HandleCase ("", "") identity "cb" ["cab", "acb"]))
                     (head (Fu.filter HandleCase ("", "") identity "cb" ["acb"]))
                 ]
+          , TestLabel "keeps original casing when filtering case insensitive" $
+              from
+                [ ( Fu.original
+                      `map` ( Fu.filter
+                                IgnoreCase
+                                ("", "")
+                                identity
+                                "abc"
+                                ["aBc"]
+                            )
+                  )
+                    @?= ["aBc"]
+                ]
+          ]
+    , TestLabel "README examples" $
+        TestList
+          [ TestLabel "hsk" $
+              from
+                [ ( match
+                      IgnoreCase
+                      ("<", ">")
+                      fst
+                      "hsk"
+                      ("Haskell", 1995 :: Int)
+                  )
+                    @?= Just
+                      ( Fuzzy
+                          { original = ("Haskell", 1995)
+                          , rendered = "<H>a<s><k>ell"
+                          , score = 5
+                          }
+                      )
+                ]
+          , TestLabel "langs" $
+              from
+                [ let
+                    langs :: [([Char], Int)]
+                    langs =
+                      [ ("Standard ML", 1990)
+                      , ("OCaml", 1996)
+                      , ("Scala", 2003)
+                      ]
+                    result = filter IgnoreCase ("<", ">") fst "ML" langs
+                    expected =
+                      [ Fuzzy
+                          { original = ("Standard ML", 1990)
+                          , rendered = "Standard <M><L>"
+                          , score = 4
+                          }
+                      , Fuzzy
+                          { original = ("OCaml", 1996)
+                          , rendered = "OCa<m><l>"
+                          , score = 4
+                          }
+                      ]
+                  in
+                    result @?= expected
+                ]
+          , TestLabel "simple filter" $
+              from
+                [ simpleFilter "vm" ["vim", "emacs", "virtual machine"]
+                    @?= ["vim", "virtual machine"]
+                ]
+          , TestLabel "test" $
+              from
+                [test "brd" "bread" @?= True]
           ]
     ]
 

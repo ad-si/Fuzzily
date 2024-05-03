@@ -71,6 +71,7 @@ Just (Fuzzy
   , score = 5
   })
 -}
+{-# INLINABLE match #-}
 match
   :: (T.TextualMonoid text)
   => CaseSensitivity
@@ -85,14 +86,13 @@ match
   -- ^ Value containing the text to search in
   -> Maybe (Fuzzy value text)
   -- ^ Original value, rendered string, and score
-match caseSensitivity (pre, post) extractFunc pattern value =
+match caseSensitivity (pre, post) extractFunc pattern value = do
   let
+    normFunc = if caseSensitivity == HandleCase
+      then identity
+      else toLower
+
     searchText = extractFunc value
-    (searchTextNorm, patternNorm) =
-      let mapToLower = T.map toLower
-      in  if caseSensitivity == HandleCase
-            then (searchText, pattern)
-            else (mapToLower searchText, pattern)
 
     (totalScore, _, result, patternFromFold) =
       T.foldl_'
@@ -105,7 +105,7 @@ match caseSensitivity (pre, post) extractFunc pattern value =
                 , pat
                 )
               Just (x, xs) ->
-                if x == c
+                if normFunc x == normFunc c
                   then
                     let cur' = cur * 2 + 1
                     in  ( tot + cur'
@@ -120,12 +120,12 @@ match caseSensitivity (pre, post) extractFunc pattern value =
                     , pat
                     )
         )
-        (0, 0, mempty, patternNorm)
-        searchTextNorm
-  in
-    if null patternFromFold
-      then Just (Fuzzy value result totalScore)
-      else Nothing
+        (0, 0, mempty, pattern)
+        searchText
+
+  if null patternFromFold
+    then Just (Fuzzy value result totalScore)
+    else Nothing
 
 
 {-|
@@ -145,6 +145,7 @@ by fuzzy search on the text extracted from them.
   }
 ]
 -}
+{-# INLINABLE filter #-}
 filter
   :: (T.TextualMonoid text)
   => CaseSensitivity
@@ -176,6 +177,7 @@ nothing is added around the matches, as case insensitive.
 >>> simpleFilter "vm" ["vim", "emacs", "virtual machine"]
 ["vim","virtual machine"]
 -}
+{-# INLINABLE simpleFilter #-}
 simpleFilter
   :: (T.TextualMonoid text)
   => text
