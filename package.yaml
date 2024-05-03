@@ -16,11 +16,6 @@ category: Text, Fuzzy, Search, Find, Filter
 extra-source-files:
   - README.md
 
-dependencies:
-  - base >= 4.18.2 && < 5
-  - monoid-subclasses >= 1.2.5 && < 1.3
-  - protolude >= 0.3.4 && < 0.4
-
 default-extensions:
   - ImportQualifiedPost
   - NoImplicitPrelude
@@ -33,14 +28,19 @@ ghc-options:
   - -Wredundant-constraints
   - -fno-warn-orphans
 
+dependencies:
+  - base >= 4.18.2 && < 5
+  - protolude >= 0.3.4 && < 0.4
+
 library:
   source-dirs: src
+  dependencies:
+    - monoid-subclasses >= 1.2.5 && < 1.3
 
 tests:
   fuzzily-test:
     main: tests.hs
     source-dirs: tests
     dependencies:
-      - base
-      - HUnit
+      - HUnit >= 1.6 && < 1.7
       - fuzzily
