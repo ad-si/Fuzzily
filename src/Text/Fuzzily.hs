@@ -4,14 +4,16 @@ Uses 'TextualMonoid' to be able to run on different types of strings.
 -}
 module Text.Fuzzily where
 
-import Protolude as P (
+import Protolude (
   Bool (True),
+  Char,
   Down (Down),
   Eq ((==)),
   Int,
   Maybe (..),
   Monoid (mempty),
   Num ((*), (+)),
+  Ord ((>)),
   Semigroup ((<>)),
   Show,
   const,
@@ -20,6 +22,7 @@ import Protolude as P (
   map,
   mapMaybe,
   not,
+  otherwise,
   sortOn,
   toLower,
   (.),
@@ -53,6 +56,44 @@ null =
 
 
 {-|
+Run one-pass algorithm on the given search text.
+Returns (rendered, score) if the whole pattern was consumed.
+-}
+matchOnce
+  :: (T.TextualMonoid text)
+  => (Char -> Char)
+  -- ^ normalisation function
+  -> (text, text)
+  -- ^ (pre, post)
+  -> text
+  -- ^ pattern
+  -> text
+  -- ^ search text
+  -> Maybe (text, Int)
+  -- ^ (rendered, score)
+matchOnce norm (pre, post) pat txt = do
+  let
+    (tot, _, res, restPat) =
+      T.foldl_'
+        ( \(tot_, cur, acc, p) c -> case T.splitCharacterPrefix p of
+            Nothing -> (tot_, 0, acc <> T.singleton c, p)
+            Just (x, xs)
+              | norm x == norm c ->
+                  let cur' = cur * 2 + 1
+                  in  ( tot_ + cur'
+                      , cur'
+                      , acc <> pre <> T.singleton c <> post
+                      , xs
+                      )
+              | otherwise -> (tot_, 0, acc <> T.singleton c, p)
+        )
+        (0, 0, mempty, pat)
+        txt
+
+  if null restPat then Just (res, tot) else Nothing
+
+
+{-|
 Returns the rendered output and the
 matching score for a pattern and a text.
 Two examples are given below:
@@ -71,7 +112,7 @@ Just (Fuzzy
   , score = 5
   })
 -}
-{-# INLINABLE match #-}
+{-# INLINEABLE match #-}
 match
   :: (T.TextualMonoid text)
   => CaseSensitivity
@@ -86,46 +127,28 @@ match
   -- ^ Value containing the text to search in
   -> Maybe (Fuzzy value text)
   -- ^ Original value, rendered string, and score
-match caseSensitivity (pre, post) extractFunc pattern value = do
+match caseSen preAndPost extract pat value = do
   let
-    normFunc = if caseSensitivity == HandleCase
-      then identity
-      else toLower
+    norm = if caseSen == HandleCase then identity else toLower
+    searchText = extract value
 
-    searchText = extractFunc value
+    -- iterate over every suffix while carrying the already-passed prefix
+    go pref txt best =
+      case matchOnce norm preAndPost pat txt of
+        Just (rendSub, sc) ->
+          let cand = Fuzzy value (pref <> rendSub) sc
+              best' = chooseBetter cand best
+          in  step best'
+        Nothing -> step best
+      where
+        step b = case T.splitCharacterPrefix txt of
+          Nothing -> b
+          Just (c, rest') -> go (pref <> T.singleton c) rest' b
 
-    (totalScore, _, result, patternFromFold) =
-      T.foldl_'
-        ( \(tot, cur, res, pat) c ->
-            case T.splitCharacterPrefix pat of
-              Nothing ->
-                ( tot
-                , 0
-                , res <> T.singleton c
-                , pat
-                )
-              Just (x, xs) ->
-                if normFunc x == normFunc c
-                  then
-                    let cur' = cur * 2 + 1
-                    in  ( tot + cur'
-                        , cur'
-                        , res <> pre <> T.singleton c <> post
-                        , xs
-                        )
-                  else
-                    ( tot
-                    , 0
-                    , res <> T.singleton c
-                    , pat
-                    )
-        )
-        (0, 0, mempty, pattern)
-        searchText
+    chooseBetter n Nothing = Just n
+    chooseBetter n (Just o) = if score n > score o then Just n else Just o
 
-  if null patternFromFold
-    then Just (Fuzzy value result totalScore)
-    else Nothing
+  go mempty searchText Nothing
 
 
 {-|
@@ -145,7 +168,7 @@ by fuzzy search on the text extracted from them.
   }
 ]
 -}
-{-# INLINABLE filter #-}
+{-# INLINEABLE filter #-}
 filter
   :: (T.TextualMonoid text)
   => CaseSensitivity
@@ -160,11 +183,11 @@ filter
   -- ^ List of values containing the text to search in
   -> [Fuzzy value text]
   -- ^ List of results, sorted, highest score first
-filter caseSen (pre, post) extractFunc pattern texts =
+filter caseSen (pre, post) extractFunc textPattern texts =
   sortOn
     (Down . score)
     ( mapMaybe
-        (match caseSen (pre, post) extractFunc pattern)
+        (match caseSen (pre, post) extractFunc textPattern)
         texts
     )
 
@@ -177,7 +200,7 @@ nothing is added around the matches, as case insensitive.
 >>> simpleFilter "vm" ["vim", "emacs", "virtual machine"]
 ["vim","virtual machine"]
 -}
-{-# INLINABLE simpleFilter #-}
+{-# INLINEABLE simpleFilter #-}
 simpleFilter
   :: (T.TextualMonoid text)
   => text
@@ -186,10 +209,10 @@ simpleFilter
   -- ^ List of texts to check.
   -> [text]
   -- ^ The ones that match.
-simpleFilter pattern xs =
+simpleFilter textPattern xs =
   map
     original
-    (filter IgnoreCase (mempty, mempty) identity pattern xs)
+    (filter IgnoreCase (mempty, mempty) identity textPattern xs)
 
 
 {-|
@@ -200,5 +223,5 @@ Returns true otherwise.
 True
 -}
 test :: (T.TextualMonoid text) => text -> text -> Bool
-test pattern text =
-  isJust (match IgnoreCase (mempty, mempty) identity pattern text)
+test textPattern text =
+  isJust (match IgnoreCase (mempty, mempty) identity textPattern text)
