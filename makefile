@@ -29,6 +29,11 @@ test-unit:
 test: lint test-unit
 
 
+.PHONY: build
+build:
+	stack build
+
+
 .PHONY: docs
 docs:
 	stack haddock --haddock-for-hackage
