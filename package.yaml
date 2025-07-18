@@ -1,5 +1,5 @@
 name: fuzzily
-version: 0.2.0.0
+version: 0.2.1.0
 synopsis: Filters a list based on a fuzzy string search
 description: |
   Fuzzily is a library that filters a list based on a fuzzy string search.

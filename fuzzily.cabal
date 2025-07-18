@@ -1,11 +1,11 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.36.0.
+-- This file has been generated from package.yaml by hpack version 0.38.0.
 --
 -- see: https://github.com/sol/hpack
 
 name:           fuzzily
-version:        0.2.0.0
+version:        0.2.1.0
 synopsis:       Filters a list based on a fuzzy string search
 description:    Fuzzily is a library that filters a list based on a fuzzy string search.
                 Uses 'TextualMonoid' to be able to run on different types of strings.
