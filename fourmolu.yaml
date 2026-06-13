@@ -1,6 +1,6 @@
 indentation: 2
 column-limit: 80
-function-arrows: leading
+function-arrows: trailing
 comma-style: leading
 import-export-style: diff-friendly
 indent-wheres: true

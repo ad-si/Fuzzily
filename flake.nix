@@ -27,8 +27,8 @@
             haskellPackages.cabal-install
             haskellPackages.fourmolu
             haskellPackages.haskell-language-server
+            haskellPackages.hlint
             haskellPackages.stack
-            hlint
           ];
         };
         formatter = pkgs.nixfmt-tree; # Format this file with `nix fmt`

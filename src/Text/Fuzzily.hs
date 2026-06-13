@@ -59,18 +59,18 @@ null =
 Run one-pass algorithm on the given search text.
 Returns (rendered, score) if the whole pattern was consumed.
 -}
-matchOnce
-  :: (T.TextualMonoid text)
-  => (Char -> Char)
-  -- ^ normalisation function
-  -> (text, text)
-  -- ^ (pre, post)
-  -> text
-  -- ^ pattern
-  -> text
-  -- ^ search text
-  -> Maybe (text, Int)
-  -- ^ (rendered, score)
+matchOnce ::
+  (T.TextualMonoid text) =>
+  -- | normalisation function
+  (Char -> Char) ->
+  -- | (pre, post)
+  (text, text) ->
+  -- | pattern
+  text ->
+  -- | search text
+  text ->
+  -- | (rendered, score)
+  Maybe (text, Int)
 matchOnce norm (pre, post) pat txt = do
   let
     (tot, _, res, restPat) =
@@ -113,20 +113,20 @@ Just (Fuzzy
   })
 -}
 {-# INLINEABLE match #-}
-match
-  :: (T.TextualMonoid text)
-  => CaseSensitivity
-  -- ^ Handle or ignore case of search text
-  -> (text, text)
-  -- ^ Text to add before and after each match
-  -> (value -> text)
-  -- ^ Function to extract the text from the container
-  -> text
-  -- ^ Pattern
-  -> value
-  -- ^ Value containing the text to search in
-  -> Maybe (Fuzzy value text)
-  -- ^ Original value, rendered string, and score
+match ::
+  (T.TextualMonoid text) =>
+  -- | Handle or ignore case of search text
+  CaseSensitivity ->
+  -- | Text to add before and after each match
+  (text, text) ->
+  -- | Function to extract the text from the container
+  (value -> text) ->
+  -- | Pattern
+  text ->
+  -- | Value containing the text to search in
+  value ->
+  -- | Original value, rendered string, and score
+  Maybe (Fuzzy value text)
 match caseSen preAndPost extract pat value = do
   let
     norm = if caseSen == HandleCase then identity else toLower
@@ -169,20 +169,20 @@ by fuzzy search on the text extracted from them.
 ]
 -}
 {-# INLINEABLE filter #-}
-filter
-  :: (T.TextualMonoid text)
-  => CaseSensitivity
-  -- ^ Handle or ignore case of search text
-  -> (text, text)
-  -- ^ Text to add before and after each match
-  -> (value -> text)
-  -- ^ Function to extract the text from the container
-  -> text
-  -- ^ Pattern
-  -> [value]
-  -- ^ List of values containing the text to search in
-  -> [Fuzzy value text]
-  -- ^ List of results, sorted, highest score first
+filter ::
+  (T.TextualMonoid text) =>
+  -- | Handle or ignore case of search text
+  CaseSensitivity ->
+  -- | Text to add before and after each match
+  (text, text) ->
+  -- | Function to extract the text from the container
+  (value -> text) ->
+  -- | Pattern
+  text ->
+  -- | List of values containing the text to search in
+  [value] ->
+  -- | List of results, sorted, highest score first
+  [Fuzzy value text]
 filter caseSen (pre, post) extractFunc textPattern texts =
   sortOn
     (Down . score)
@@ -201,14 +201,14 @@ nothing is added around the matches, as case insensitive.
 ["vim","virtual machine"]
 -}
 {-# INLINEABLE simpleFilter #-}
-simpleFilter
-  :: (T.TextualMonoid text)
-  => text
-  -- ^ Pattern to look for.
-  -> [text]
-  -- ^ List of texts to check.
-  -> [text]
-  -- ^ The ones that match.
+simpleFilter ::
+  (T.TextualMonoid text) =>
+  -- | Pattern to look for.
+  text ->
+  -- | List of texts to check.
+  [text] ->
+  -- | The ones that match.
+  [text]
 simpleFilter textPattern xs =
   map
     original
