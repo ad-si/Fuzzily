@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
     utils.url = "github:numtide/flake-utils";
   };
 
@@ -22,7 +22,7 @@
             coreutils
             fd
             gnumake
-            haskell.compiler.ghc98
+            haskell.compiler.ghc910
             haskellPackages.cabal-fmt
             haskellPackages.cabal-install
             haskellPackages.fourmolu
