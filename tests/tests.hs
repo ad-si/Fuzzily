@@ -3,24 +3,51 @@ module Main where
 import Protolude (
   Bool (False, True),
   Char,
+  Eq ((/=), (==)),
   IO,
   Int,
+  Integral (div, mod),
   Maybe (Just, Nothing),
-  Monad (return),
+  Monad ((>>=)),
+  Monoid (mempty),
+  Num ((*), (+)),
+  Ord ((<=), (>)),
+  Text,
+  drop,
+  evaluate,
   fst,
   head,
   identity,
+  iterate,
   map,
+  not,
+  replicateM,
+  take,
+  toLower,
+  when,
   ($),
   (<$>),
   (<>),
  )
 
-import Test.HUnit (Assertion, Test (..), runTestTT, (@?=))
+import Data.Text qualified as T
+import System.Exit (exitFailure)
+import System.Timeout (timeout)
+import Test.HUnit (
+  Assertion,
+  Counts (errors, failures),
+  Test (..),
+  assertBool,
+  runTestTT,
+  (@?=),
+ )
 import Text.Fuzzily as Fu (
   CaseSensitivity (HandleCase, IgnoreCase),
   Fuzzy (Fuzzy, original, rendered, score),
+  bestGreedyMatchScan,
+  bestGreedyMatchTable,
   filter,
+  isSubsequenceOf,
   match,
   simpleFilter,
   test,
@@ -92,7 +119,7 @@ tests =
                     identity
                     "ab"
                     "ZaZbZ"
-                    @?= Just "ZaZbZ"
+                  @?= Just "ZaZbZ"
               ]
         , TestLabel "returns Nothing on no match" $
             from
@@ -123,7 +150,7 @@ tests =
                     identity
                     "brd"
                     "bread"
-                    @?= Just "<b><r>ea<d>"
+                  @?= Just "<b><r>ea<d>"
               ]
         ]
   , TestLabel "filter" $
@@ -223,10 +250,130 @@ tests =
   ]
 
 
+{-|
+Reference implementation of the original (cubic) algorithm
+to verify that the optimized one yields identical results.
+-}
+referenceMatch ::
+  CaseSensitivity -> (Text, Text) -> Text -> Text -> Maybe (Text, Int)
+referenceMatch caseSen (pre, post) pat txt0 =
+  go mempty txt0 Nothing
+  where
+    norm = if caseSen == HandleCase then identity else toLower
+    matchOnce txt =
+      let
+        (tot, _, res, restPat) =
+          T.foldl'
+            ( \(tot_, cur, acc, p) c -> case T.uncons p of
+                Nothing -> (tot_, 0 :: Int, acc <> T.singleton c, p)
+                Just (x, xs)
+                  | norm x == norm c ->
+                      let cur' = cur * 2 + 1
+                      in  (tot_ + cur', cur', acc <> pre <> T.singleton c <> post, xs)
+                  | True -> (tot_, 0, acc <> T.singleton c, p)
+            )
+            (0, 0, mempty, pat)
+            txt
+      in
+        if T.null restPat then Just (res, tot) else Nothing
+    go pref txt best =
+      let
+        best' = case matchOnce txt of
+          Just (rendSub, sc) -> case best of
+            Just (_, bestSc) | sc <= bestSc -> best
+            _ -> Just (pref <> rendSub, sc)
+          Nothing -> best
+      in
+        case T.uncons txt of
+          Nothing -> best'
+          Just (c, rest) -> go (pref <> T.singleton c) rest best'
+
+
+-- | All strings over the given alphabet up to the given length
+stringsUpTo :: Int -> [Char] -> [Text]
+stringsUpTo n alphabet =
+  [0 .. n] >>= \k -> T.pack <$> replicateM k alphabet
+
+
+equivalenceTests :: Test
+equivalenceTests =
+  TestLabel "matches the reference implementation" $
+    from
+      [ [ (caseSen, pat, txt)
+        | let tags = (T.pack "<", T.pack ">")
+        , caseSen <- [IgnoreCase, HandleCase]
+        , pat <- stringsUpTo 4 "aBc"
+        , txt <- stringsUpTo 6 "abC"
+        , ((\f -> (rendered f, score f)) <$> Fu.match caseSen tags identity pat txt)
+            /= referenceMatch caseSen tags pat txt
+        ]
+          @?= []
+      ]
+
+
+-- | Pseudo-random text over the given alphabet (linear congruential generator)
+pseudoRandomText :: Int -> Int -> Text -> Text
+pseudoRandomText seed len alphabet =
+  T.pack $
+    map
+      (\x -> T.index alphabet ((x `div` 65536) `mod` T.length alphabet))
+      ( take
+          len
+          (drop 1 (iterate (\x -> (x * 1103515245 + 12345) `mod` 2147483648) seed))
+      )
+
+
+greedyImplementationTests :: Test
+greedyImplementationTests =
+  TestLabel "scan and table implementations agree" $
+    from
+      [ [ (pat, txt)
+        | (pat, txt) <-
+            [(pat, txt) | pat <- stringsUpTo 4 "abc", txt <- stringsUpTo 6 "abc"]
+              <> [ (pat, pseudoRandomText seed (150 + seed) (T.pack "abcd"))
+                 | seed <- [1 .. 250]
+                 , pat <- stringsUpTo 3 "abcd"
+                 ]
+        , not (T.null pat)
+        , Fu.isSubsequenceOf pat txt
+        , Fu.bestGreedyMatchScan pat txt /= Fu.bestGreedyMatchTable pat txt
+        ]
+          @?= []
+      ]
+
+
+performanceTests :: Test
+performanceTests =
+  TestLabel "matches long texts quickly" $
+    from
+      [ do
+          let
+            longText =
+              T.replicate 2000 (T.pack "lorem ipsum ")
+                <> T.pack "xyz"
+                <> T.replicate 2000 (T.pack " dolor sit")
+          result <-
+            timeout 2000000 $
+              evaluate $
+                (\f -> (score f, T.length (rendered f)))
+                  <$> Fu.match
+                    IgnoreCase
+                    (T.pack "<", T.pack ">")
+                    identity
+                    (T.pack "xyz")
+                    longText
+          assertBool "match took longer than 2 seconds" $
+            result == Just (Just (11, T.length longText + 6))
+      ]
+
+
 runTests :: IO ()
 runTests = do
-  _ <- runTestTT $ TestList tests
-  return ()
+  counts <-
+    runTestTT $
+      TestList
+        (tests <> [equivalenceTests, greedyImplementationTests, performanceTests])
+  when (errors counts + failures counts > 0) exitFailure
 
 
 -- | For now, main will run our tests.

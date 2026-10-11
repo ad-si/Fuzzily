@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.38.0.
+-- This file has been generated from package.yaml by hpack version 0.38.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -37,9 +37,11 @@ library
       NoImplicitPrelude
   ghc-options: -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints -fno-warn-orphans
   build-depends:
-      base >=4.18.2 && <5
+      array ==0.5.*
+    , base >=4.18.2 && <5
     , monoid-subclasses >=1.2.5 && <1.3
     , protolude >=0.3.4 && <0.4
+    , text >=2.0 && <2.2
   default-language: Haskell2010
 
 test-suite fuzzily-test
@@ -58,4 +60,24 @@ test-suite fuzzily-test
     , base >=4.18.2 && <5
     , fuzzily
     , protolude >=0.3.4 && <0.4
+    , text
+  default-language: Haskell2010
+
+benchmark fuzzily-bench
+  type: exitcode-stdio-1.0
+  main-is: bench.hs
+  other-modules:
+      Paths_fuzzily
+  hs-source-dirs:
+      bench
+  default-extensions:
+      ImportQualifiedPost
+      NoImplicitPrelude
+  ghc-options: -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints -fno-warn-orphans -O2
+  build-depends:
+      base >=4.18.2 && <5
+    , fuzzily
+    , protolude >=0.3.4 && <0.4
+    , tasty-bench
+    , text
   default-language: Haskell2010
